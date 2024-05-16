@@ -38,6 +38,39 @@ class CashInvoiceIn(models.TransientModel):
             active_model, active_ids
         )
 
+    @api.onchange('invoice_id')
+    def _onchange_invoice(self):
+        active_model = self.env.context.get('active_model', False)
+        active_ids = self.env.context.get('active_ids', False)
+        if active_model == 'pos.session' and self.invoice_id:
+            sessions = self.env[active_model].browse(active_ids)
+            residual = self.invoice_id.residual
+            amount = sum(sessions.mapped('statement_ids.line_ids').filtered(
+                lambda r: r.invoice_id.id == self.invoice_id.id
+            ).mapped('amount'))
+            self.amount = max(0.0, residual + amount)
+        else:
+            return super(CashInvoiceIn, self)._onchange_invoice()
+
+    @api.onchange('amount')
+    def _onchange_amount(self):
+        active_model = self.env.context.get('active_model', False)
+        active_ids = self.env.context.get('active_ids', False)
+        if active_model == 'pos.session' and self.invoice_id:
+            sessions = self.env[active_model].browse(active_ids)
+            residual = self.invoice_id.residual
+            amount = sum(sessions.mapped('statement_ids.line_ids').filtered(
+                lambda r: r.invoice_id.id == self.invoice_id.id
+            ).mapped('amount'))
+            max_amount = residual + amount
+            if self.amount > max_amount:
+                self.amount = max(0.0, max_amount)
+                warning = {
+                    'title': (_('Information')),
+                    'message': (u"Le montant ne dois pas dépasser %.2f pour cette facture" % max(0.0, max_amount))
+                }
+                return {'warning': warning}
+
     @api.multi
     def run(self):
         active_model = self.env.context.get('active_model', False)
