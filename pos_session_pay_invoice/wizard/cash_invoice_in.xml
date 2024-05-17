@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
-    <act_window
-            id="action_pos_invoice_in"
-            name="Pay invoice"
-            res_model="cash.invoice.in"
-            src_model="pos.session"
-            view_mode="form"
-            target="new"
-            key2="client_action_multi"
-        />
+    <record id="action_pos_invoice_in" model="ir.actions.act_window">
+        <field name="name">Pay invoice</field>
+        <field name="res_model">cash.invoice.in</field>
+        <field name="view_type">form</field>
+        <field name="target">new</field>
+    </record>
 </odoo>
